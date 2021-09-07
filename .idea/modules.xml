@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Copy.iml" filepath="$PROJECT_DIR$/.idea/Copy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/rada-inference.iml" filepath="$PROJECT_DIR$/.idea/rada-inference.iml" />
     </modules>
   </component>
 </project>
