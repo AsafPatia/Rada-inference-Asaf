@@ -1,4 +1,9 @@
+import asyncio
+import json
 import logging
+import pickle
+import socketserver
+import threading
 from datetime import datetime
 from collections import defaultdict
 import random
@@ -9,13 +14,53 @@ from config.logging_config import init as init_logger
 import time
 import sys
 import pandas as pd
+import socket
 
 init_logger()
 logger = logging.getLogger(__name__)
 Input_Data = dict()
 OutPut_Data = dict()
 curr_Time = 0
+# ========================================== start Added Here =============================
+sample1 = [2, 2021, 8, 25, 19, 2, 4, 100.0, 0, 150, 1, 1, 1, 1, 200, 2, 2, 2]
+sample2 = [3, 2021, 8, 25, 19, 2, 4, 100.3, 0, 155, 1, 2, 3, 1, 258, 7, 6, 7, 2, 79, 1, 2, 1]
+sample3 = [2, 2021, 8, 25, 19, 2, 4, 100.5, 0, 159, 1, 4, 7, 2, 298, 2, 2, 2]
 
+
+# class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+#     def handle(self):
+#         data_string = self.request.recv(1024)
+#         data = pickle.loads(data_string)
+#         print("Server Received:", data)
+#         handle_message_received(data)
+#         print(Input_Data)
+#         # cur_thread = threading.main_thread()
+#         # response = bytes("{}: {}".format(cur_thread.name, data), "ascii")
+#         # self.request.sendall(response)
+#
+#
+# class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+#     pass
+
+
+def client(ip, port, data):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect((ip, port))
+        sock.send(pickle.dumps(data))
+        sock.close()
+        # response = str(sock.recv(1024), "ascii")
+        # print("Client Received: {}".format(response))
+
+
+async def client1(message):
+    reader, writer = await asyncio.open_connection(settings.host_ip, settings.host_port)
+    print(f'Send: {message!r}')
+    writer.write(pickle.dumps(message))
+    await writer.drain()
+    print('Close the connection')
+    writer.close()
+
+# ========================================== End Added Here =============================
 
 # TODO: check if we need to keep only the last predictions or a history of more than one
 predictions = defaultdict(dict)
@@ -40,14 +85,35 @@ def read_cli_values(argv):
           '} ; plot_sliding_window_size {', settings.plot_sliding_window_size, '}', sep='')
 
 
+# def start_listening():
+#     logger.debug("start_listening()")
+#     HOST, PORT = settings.host_ip, settings.host_port
+#     server = ThreadedTCPServer((HOST, PORT), ThreadedTCPRequestHandler)
+#     with server:
+#         ip, port = server.server_address
+#
+#         # Start a thread with the server -- that thread will then start one
+#         # more thread for each request
+#         server_thread = threading.Thread(target=server.serve_forever)
+#         # Exit the server thread when the main thread terminates
+#         server_thread.daemon = True
+#         server_thread.start()
+#         print("Server loop running in thread:", server_thread.name)
+#         client(ip, port, sample1)
+#         server_thread.join()
+#         print("Server Shoutdown")
+#         server.shutdown()
+
+
 def start_listening():
     logger.debug("start_listening()")
     sock = BMAsyncSocket(settings.host_ip, settings.host_port, handle_message_received)
     sock.start()
-    time.sleep(10)
-    print('Input-Data after receiving The Arrays:')
-    print(Input_Data, '\n\n\n')
+    asyncio.run(client1(sample1))
+    asyncio.run(client1(sample2))
+    asyncio.run(client1(sample3))
     sock.stop()
+    print(Input_Data)
 
 
 def handle_message_received(data):
@@ -133,13 +199,14 @@ def send_predictions():
     print("im in send_predictions")
     data = ""
     for key, val in OutPut_Data.items():
-        data += "index:" + str(key) +\
-                " Prediction:" + str(val['Prediction']) +\
-                " Confidence:" + str(val['Confidence']) +\
+        data += "index:" + str(key) + \
+                " Prediction:" + str(val['Prediction']) + \
+                " Confidence:" + str(val['Confidence']) + \
                 " LastUpdateTS:" + str(val['LastUpdateTS']) + '\n'
 
     print(data)
-    BMAsyncSocket.send_msg(settings.client_ip, settings.client_port, data.encode())
+    # BMAsyncSocket.send_msg(settings.client_ip, settings.client_port, data.encode())
+    client(settings.client_ip, settings.client_port, pickle.dumps(data))
 
 
 # ===================================== Currently unused ===========================================
