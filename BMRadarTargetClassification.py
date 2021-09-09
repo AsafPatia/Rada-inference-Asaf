@@ -57,7 +57,6 @@ async def client1(message):
     print(f'Send: {message!r}')
     writer.write(pickle.dumps(message))
     await writer.drain()
-    print('Close the connection')
     writer.close()
 
 # ========================================== End Added Here =============================
@@ -113,6 +112,8 @@ def start_listening():
     asyncio.run(client1(sample2))
     asyncio.run(client1(sample3))
     sock.stop()
+    print("\n\n\n")
+    print("Input Data So Far:")
     print(Input_Data)
 
 
@@ -170,7 +171,6 @@ def start_inferences():
     try:
         while 1:
             time.sleep(inference_frequency)
-            print('im in start_inferences')
             # inference_input = prepare_data_for_inference()
             # inference_output = run_inference(inference_input)
             run_inference()
@@ -190,13 +190,19 @@ def run_inference():
     for key in Input_Data.keys():
         OutPut_Data[key] = {'Prediction': random.randint(0, 1), 'Confidence': random.uniform(0.43, 1.0),
                             'LastUpdateTS': random.randint(100, 200)}
-    print(OutPut_Data, '\n\n\n')
-
-
+# async def handle_client1(reader, writer):
+#     request = (await reader.read(1024)).decode('utf8')  # should read until end of msg
+#     print(request)
+#
+#     response = "thx"
+#     writer.write(response.encode('utf8'))
+#     await writer.drain()
+#     writer.close()
 # send predictions to client
+
+
 def send_predictions():
     # TODO: encode data into binary structure as described in design document
-    print("im in send_predictions")
     data = ""
     for key, val in OutPut_Data.items():
         data += "index:" + str(key) + \
@@ -204,9 +210,10 @@ def send_predictions():
                 " Confidence:" + str(val['Confidence']) + \
                 " LastUpdateTS:" + str(val['LastUpdateTS']) + '\n'
 
-    print(data)
-    # BMAsyncSocket.send_msg(settings.client_ip, settings.client_port, data.encode())
-    client(settings.client_ip, settings.client_port, pickle.dumps(data))
+    # loop = asyncio.get_event_loop()
+    # loop.create_task(asyncio.start_server(handle_client1, settings.client_ip, settings.client_port))
+    # loop.run_forever()
+    BMAsyncSocket.send_msg(settings.client_ip, 7034, data.encode())
 
 
 # ===================================== Currently unused ===========================================

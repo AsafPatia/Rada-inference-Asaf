@@ -54,8 +54,6 @@ class BMAsyncSocket(threading.Thread):
     def send_msg(client, port, msg):
         async def send(_client, _port, _msg):
             try:
-                print(client, port, msg)
-                print("after try\n\n\n")
                 reader, writer = await asyncio.open_connection(_client, _port)
             except OSError as e:
                 logger.error('Error while connecting to upstream: %s', e)
@@ -70,6 +68,8 @@ class BMAsyncSocket(threading.Thread):
                 # print('Error while writing to upstream:', e)
                 return
 
-        loop = asyncio.get_event_loop()
+        # loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         coroutine = send(client, port, msg)
         loop.run_until_complete(coroutine)
